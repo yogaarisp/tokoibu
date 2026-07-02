@@ -1,0 +1,35 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | CORS Configuration
+    |--------------------------------------------------------------------------
+    | Untuk pure token-based API, supports_credentials = false
+    | cukup izinkan origin frontend saja
+    */
+
+    'paths'                    => ['api/*'],
+
+    'allowed_methods'          => ['*'],
+
+    'allowed_origins' => [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+        'http://192.168.18.242:5173',
+        'http://192.168.18.242:5174',
+    ],
+
+    'allowed_origins_patterns' => [],
+
+    'allowed_headers'          => ['*'],
+
+    'exposed_headers'          => [],
+
+    'max_age'                  => 86400,
+
+    // false karena kita pakai Bearer token, bukan cookie
+    'supports_credentials'     => false,
+];
