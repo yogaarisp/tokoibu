@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bluetooth, BluetoothConnected, BluetoothOff, Printer, CheckCircle, AlertTriangle, RefreshCw, Wifi, X, ArrowLeft } from 'lucide-react'
+import { Bluetooth, BluetoothConnected, BluetoothOff, Printer, CheckCircle, AlertTriangle, RefreshCw, Wifi, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { printerManager, printerStorage, PrinterSettings } from '@/lib/bluetoothPrinter'

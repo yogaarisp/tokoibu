@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PayDebtRequest;
+use App\Http\Resources\SupplierDebtResource;
 use App\Models\SupplierDebt;
 use App\Services\DebtService;
 use Illuminate\Http\JsonResponse;
@@ -15,22 +17,19 @@ class SupplierDebtController extends Controller
     public function index(Request $request): JsonResponse
     {
         $debts = SupplierDebt::with('supplier:id,name', 'purchase:id,po_number', 'user:id,name')
-            ->when($request->status, fn($q, $s) => $q->where('status', $s))
-            ->when($request->search, fn($q, $s) =>
-                $q->whereHas('supplier', fn($sq) => $sq->where('name', 'like', "%{$s}%"))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+            ->when($request->search, fn ($q, $s) => $q->whereHas('supplier', fn ($sq) => $sq->where('name', 'like', "%{$s}%"))
             )
             ->latest()->paginate($request->per_page ?? 20);
 
-        return response()->json($debts);
+        return response()->json(
+            $debts->through(fn ($debt) => (new SupplierDebtResource($debt))->resolve($request))
+        );
     }
 
-    public function pay(Request $request, SupplierDebt $debt): JsonResponse
+    public function pay(PayDebtRequest $request, SupplierDebt $debt): JsonResponse
     {
-        $data = $request->validate([
-            'amount'         => 'required|numeric|min:1',
-            'payment_method' => 'required|string',
-            'notes'          => 'nullable|string',
-        ]);
+        $data = $request->validated();
 
         $payment = $this->debtService->paySupplier(
             $debt, $data['amount'], $data['payment_method'], $data['notes'] ?? ''

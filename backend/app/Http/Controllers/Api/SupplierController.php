@@ -12,7 +12,7 @@ class SupplierController extends Controller
     public function index(Request $request): JsonResponse
     {
         $suppliers = Supplier::withCount('products')
-            ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->latest()->paginate($request->per_page ?? 20);
 
         return response()->json($suppliers);
@@ -21,11 +21,11 @@ class SupplierController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'      => 'required|string|max:150',
-            'phone'     => 'nullable|string|max:20',
-            'email'     => 'nullable|email|max:150',
-            'address'   => 'nullable|string',
-            'notes'     => 'nullable|string',
+            'name' => 'required|string|max:150',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:150',
+            'address' => 'nullable|string',
+            'notes' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -40,11 +40,11 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier): JsonResponse
     {
         $data = $request->validate([
-            'name'      => 'sometimes|required|string|max:150',
-            'phone'     => 'nullable|string|max:20',
-            'email'     => 'nullable|email|max:150',
-            'address'   => 'nullable|string',
-            'notes'     => 'nullable|string',
+            'name' => 'sometimes|required|string|max:150',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:150',
+            'address' => 'nullable|string',
+            'notes' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -56,6 +56,7 @@ class SupplierController extends Controller
     public function destroy(Supplier $supplier): JsonResponse
     {
         $supplier->delete();
+
         return response()->json(['message' => 'Supplier berhasil dihapus.']);
     }
 }

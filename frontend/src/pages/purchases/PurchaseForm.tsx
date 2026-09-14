@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getSuppliers, createPurchase } from '@/api'
 import { getProducts } from '@/api/products'

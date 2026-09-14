@@ -3,19 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\StockTransfer;
-use App\Models\Location;
 use App\Models\ProductStock;
+use App\Models\StockTransfer;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StockTransferController extends Controller
 {
+    public function __construct(private InventoryService $inventoryService) {}
+
     public function index()
     {
         $transfers = StockTransfer::with(['fromLocation', 'toLocation', 'product', 'user'])
             ->orderBy('transferred_at', 'desc')
             ->paginate(20);
+
         return response()->json($transfers);
     }
 
@@ -36,7 +39,7 @@ class StockTransferController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (!$fromStock || $fromStock->stock < $validated['quantity']) {
+            if (! $fromStock || $fromStock->stock < $validated['quantity']) {
                 abort(400, 'Stok di lokasi asal tidak mencukupi');
             }
 
@@ -53,6 +56,9 @@ class StockTransferController extends Controller
             );
             $toStock->increment('stock', $validated['quantity']);
 
+            // Sinkronkan mirror products.stock dari sum(product_stocks)
+            $this->inventoryService->syncStockMirror($validated['product_id']);
+
             // Create transfer record
             $transfer = StockTransfer::create($validated);
             $transfer->load(['fromLocation', 'toLocation', 'product', 'user']);
@@ -64,6 +70,7 @@ class StockTransferController extends Controller
     public function show(StockTransfer $stockTransfer)
     {
         $stockTransfer->load(['fromLocation', 'toLocation', 'product', 'user']);
+
         return response()->json($stockTransfer);
     }
 }

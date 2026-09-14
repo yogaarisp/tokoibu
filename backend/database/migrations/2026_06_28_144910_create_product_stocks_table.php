@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('min_stock')->default(0);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->unique(['product_id', 'location_id']);
         });
     }

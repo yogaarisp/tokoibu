@@ -11,16 +11,23 @@ class Category extends Model
     use SoftDeletes;
 
     protected $fillable = ['name', 'slug', 'icon', 'description', 'is_active'];
-    protected $casts    = ['is_active' => 'boolean'];
+
+    protected $casts = ['is_active' => 'boolean'];
 
     protected static function boot(): void
     {
         parent::boot();
-        static::creating(fn($m) => $m->slug = Str::slug($m->name));
-        static::updating(fn($m) => $m->slug = Str::slug($m->name));
+        static::creating(fn ($m) => $m->slug = Str::slug($m->name));
+        static::updating(fn ($m) => $m->slug = Str::slug($m->name));
     }
 
-    public function scopeActive($q) { return $q->where('is_active', true); }
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
+    }
 
-    public function products() { return $this->hasMany(Product::class); }
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }

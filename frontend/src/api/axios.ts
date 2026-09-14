@@ -1,4 +1,5 @@
 import axios from 'axios'
+import toast from 'react-hot-toast'
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -24,13 +25,19 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle 401 — redirect ke login
+// Handle 401 — redirect ke login. Handle 403 — toast akses ditolak.
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    const isLoginRequest = error.config?.url?.includes('/auth/login')
+
+    if (status === 401 && !isLoginRequest) {
       localStorage.removeItem('token')
       window.location.href = '/login'
+    } else if (status === 403) {
+      const msg = error.response?.data?.message ?? 'Akses ditolak.'
+      toast.error(msg)
     }
     return Promise.reject(error)
   },

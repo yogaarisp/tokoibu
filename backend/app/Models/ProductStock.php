@@ -5,6 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property Product $product
+ * @property Location $location
+ * @property int $stock
+ * @property int $min_stock
+ */
 class ProductStock extends Model
 {
     use SoftDeletes;

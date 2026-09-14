@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Models\Location;
 use App\Models\Product;
+use App\Models\ProductStock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +19,7 @@ class ProductController extends Controller
     {
         $sku = trim((string) $sku);
 
-        return $sku === '' ? null : Str::upper($sku);
+        return $sku === '' ? null : strtoupper($sku);
     }
 
     private function normalizeBarcode(?string $barcode): ?string
@@ -28,45 +32,24 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $products = Product::with('category:id,name', 'supplier:id,name', 'productStocks.location')
-            ->when($request->search, fn($q, $s) => $q->search($s))
-            ->when($request->category_id, fn($q, $c) => $q->where('category_id', $c))
-            ->when($request->low_stock, fn($q) => $q->lowStock())
-            ->when($request->filled('is_active'), fn($q) => $q->where('is_active', $request->boolean('is_active')))
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+            ->when($request->category_id, fn ($q, $c) => $q->where('category_id', $c))
+            ->when($request->low_stock, fn ($q) => $q->lowStock())
+            ->when($request->filled('is_active'), fn ($q) => $q->where('is_active', $request->boolean('is_active')))
             ->latest()
             ->paginate($request->per_page ?? 20);
 
         return response()->json($products);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        $request->merge([
-            'sku' => $this->normalizeSku($request->input('sku')),
-            'barcode' => $this->normalizeBarcode($request->input('barcode')),
-        ]);
-
-        $data = $request->validate([
-            'name'        => 'required|string|max:200',
-            'sku'         => 'nullable|string|max:50|unique:products,sku',
-            'barcode'     => 'nullable|string|max:100|unique:products,barcode',
-            'category_id' => 'required|exists:categories,id',
-            'supplier_id' => 'nullable|exists:suppliers,id',
-            'buy_price'   => 'required|numeric|min:0',
-            'sell_price'  => 'required|numeric|min:0',
-            'min_stock'   => 'required|integer|min:0',
-            'unit'        => 'required|string|max:20',
-            'unit_warehouse' => 'nullable|string|max:20',
-            'unit_conversion' => 'nullable|integer|min:1',
-            'photo'       => 'nullable|image|max:2048',
-            'remove_photo'=> 'nullable|boolean',
-            'description' => 'nullable|string',
-            'is_active'   => 'boolean',
-        ]);
+        $data = $request->validated();
 
         unset($data['remove_photo']);
 
         if (empty($data['sku'])) {
-            $data['sku'] = 'SKU-' . strtoupper(Str::random(8));
+            $data['sku'] = 'SKU-'.strtoupper(Str::random(8));
         }
 
         if (empty($data['unit_warehouse'])) {
@@ -84,18 +67,18 @@ class ProductController extends Controller
         $product = Product::create($data);
 
         // Inisialisasi stok di gudang dan rak
-        $warehouse = \App\Models\Location::where('type', 'warehouse')->first();
-        $display = \App\Models\Location::where('type', 'display')->first();
+        $warehouse = Location::where('type', 'warehouse')->first();
+        $display = Location::where('type', 'display')->first();
 
         if ($warehouse) {
-            \App\Models\ProductStock::firstOrCreate(
+            ProductStock::firstOrCreate(
                 ['product_id' => $product->id, 'location_id' => $warehouse->id],
                 ['stock' => 0, 'min_stock' => $data['min_stock']]
             );
         }
 
         if ($display) {
-            \App\Models\ProductStock::firstOrCreate(
+            ProductStock::firstOrCreate(
                 ['product_id' => $product->id, 'location_id' => $display->id],
                 ['stock' => 0, 'min_stock' => $data['min_stock']]
             );
@@ -111,35 +94,16 @@ class ProductController extends Controller
         );
     }
 
-    public function update(Request $request, Product $product): JsonResponse
+    public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
-        $request->merge([
-            'sku' => $this->normalizeSku($request->input('sku')),
-            'barcode' => $this->normalizeBarcode($request->input('barcode')),
-        ]);
-
-        $data = $request->validate([
-            'name'        => 'sometimes|required|string|max:200',
-            'sku'         => "sometimes|nullable|string|max:50|unique:products,sku,{$product->id}",
-            'barcode'     => "sometimes|nullable|string|max:100|unique:products,barcode,{$product->id}",
-            'category_id' => 'sometimes|required|exists:categories,id',
-            'supplier_id' => 'nullable|exists:suppliers,id',
-            'buy_price'   => 'sometimes|required|numeric|min:0',
-            'sell_price'  => 'sometimes|required|numeric|min:0',
-            'min_stock'   => 'sometimes|required|integer|min:0',
-            'unit'        => 'sometimes|required|string|max:20',
-            'unit_warehouse' => 'nullable|string|max:20',
-            'unit_conversion' => 'nullable|integer|min:1',
-            'photo'       => 'nullable|image|max:2048',
-            'remove_photo'=> 'nullable|boolean',
-            'description' => 'nullable|string',
-            'is_active'   => 'boolean',
-        ]);
+        $data = $request->validated();
 
         $removePhoto = $request->boolean('remove_photo');
 
         if ($request->hasFile('photo')) {
-            if ($product->photo) Storage::disk('public')->delete($product->photo);
+            if ($product->photo) {
+                Storage::disk('public')->delete($product->photo);
+            }
             $data['photo'] = $request->file('photo')->store('products', 'public');
         } elseif ($removePhoto && $product->photo) {
             Storage::disk('public')->delete($product->photo);
@@ -155,7 +119,9 @@ class ProductController extends Controller
 
     public function destroy(Product $product): JsonResponse
     {
-        if ($product->photo) Storage::disk('public')->delete($product->photo);
+        if ($product->photo) {
+            Storage::disk('public')->delete($product->photo);
+        }
         $product->delete();
 
         return response()->json(['message' => 'Produk berhasil dihapus.']);

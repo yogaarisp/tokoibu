@@ -42,6 +42,20 @@ export default function PosPage() {
   const barcodeBuffer = useRef('')
   const barcodeTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const handleBarcodeLookup = async (code: string) => {
+    try {
+      const res = await searchByBarcode(code)
+      if (res.data) {
+        cart.addItem(res.data)
+        setSearch('')
+        setShowScanner(false)
+        toast.success(`✓ ${res.data.name}`, { duration: 1500, icon: '📦' })
+      }
+    } catch {
+      toast.error(`Barcode "${code}" tidak ditemukan`, { duration: 2000 })
+    }
+  }
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName
@@ -59,21 +73,8 @@ export default function PosPage() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- listener pasang sekali; handler stabil via ref cart
   }, [])
-
-  const handleBarcodeLookup = async (code: string) => {
-    try {
-      const res = await searchByBarcode(code)
-      if (res.data) {
-        cart.addItem(res.data)
-        setSearch('')
-        setShowScanner(false)
-        toast.success(`✓ ${res.data.name}`, { duration: 1500, icon: '📦' })
-      }
-    } catch {
-      toast.error(`Barcode "${code}" tidak ditemukan`, { duration: 2000 })
-    }
-  }
 
   const saleMut = useMutation({
     mutationFn: createSale,

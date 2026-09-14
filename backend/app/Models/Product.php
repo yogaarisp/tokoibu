@@ -2,11 +2,29 @@
 
 namespace App\Models;
 
-use App\Models\Location;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property int $id
+ * @property Category $category
+ * @property Supplier|null $supplier
+ * @property Collection<int, ProductStock> $productStocks
+ * @property string $sku
+ * @property string $name
+ * @property string $buy_price
+ * @property string $sell_price
+ * @property int $stock
+ * @property int $min_stock
+ * @property string $unit
+ * @property string|null $unit_warehouse
+ * @property int|null $unit_conversion
+ * @property bool $is_active
+ * @property string|null $barcode
+ */
 class Product extends Model
 {
     use SoftDeletes;
@@ -19,21 +37,29 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'buy_price'  => 'decimal:2',
+        'buy_price' => 'decimal:2',
         'sell_price' => 'decimal:2',
-        'is_active'  => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     protected $appends = ['photo_url', 'is_low_stock', 'total_stock', 'display_stock'];
 
     /* ── Scopes ── */
-    public function scopeActive($q)          { return $q->where('is_active', true); }
-    public function scopeLowStock($q)        { return $q->whereColumn('stock', '<=', 'min_stock'); }
-    public function scopeSearch($q, $term)   {
-        return $q->where(fn($s) =>
-            $s->where('name', 'like', "%{$term}%")
-              ->orWhere('sku', 'like', "%{$term}%")
-              ->orWhere('barcode', 'like', "%{$term}%")
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
+    }
+
+    public function scopeLowStock($q)
+    {
+        return $q->whereColumn('stock', '<=', 'min_stock');
+    }
+
+    public function scopeSearch($q, $term)
+    {
+        return $q->where(fn ($s) => $s->where('name', 'like', "%{$term}%")
+            ->orWhere('sku', 'like', "%{$term}%")
+            ->orWhere('barcode', 'like', "%{$term}%")
         );
     }
 
@@ -41,7 +67,7 @@ class Product extends Model
     public function getPhotoUrlAttribute(): string
     {
         return $this->photo
-            ? '/storage/' . $this->photo
+            ? '/storage/'.$this->photo
             : '/images/product-placeholder.svg';
     }
 
@@ -57,17 +83,51 @@ class Product extends Model
 
     public function getDisplayStockAttribute(): int
     {
-        $displayLocation = Location::where('type', 'display')->first();
-        if (!$displayLocation) return (int) ($this->stock ?? 0);
-        
-        $productStock = $this->productStocks()->where('location_id', $displayLocation->id)->first();
+        // Cache ID lokasi display di request-scoped static agar
+        // tidak ada query Location per baris produk (N+1)
+        static $displayLocationId = null;
+        static $resolved = false;
+
+        if (! $resolved) {
+            $displayLocationId = Location::where('type', 'display')->value('id');
+            $resolved = true;
+        }
+
+        if (! $displayLocationId) {
+            return (int) ($this->stock ?? 0);
+        }
+
+        // Manfaatkan relasi yang sudah di-eager load bila ada (hindari N+1)
+        $productStock = $this->productStocks->firstWhere('location_id', $displayLocationId)
+            ?? $this->productStocks()->where('location_id', $displayLocationId)->first();
+
         return $productStock ? (int) $productStock->stock : (int) ($this->stock ?? 0);
     }
 
     /* ── Relations ── */
-    public function category()       { return $this->belongsTo(Category::class); }
-    public function supplier()       { return $this->belongsTo(Supplier::class); }
-    public function stockMovements() { return $this->hasMany(StockMovement::class); }
-    public function saleItems()      { return $this->hasMany(SaleItem::class); }
-    public function productStocks()  { return $this->hasMany(ProductStock::class); }
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function saleItems(): HasMany
+    {
+        return $this->hasMany(SaleItem::class);
+    }
+
+    /** @return HasMany<ProductStock, $this> */
+    public function productStocks(): HasMany
+    {
+        return $this->hasMany(ProductStock::class);
+    }
 }

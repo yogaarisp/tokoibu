@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,6 +16,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Set guard untuk Spatie Permission
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionClass(\Spatie\Permission\Models\Permission::class);
+        app(PermissionRegistrar::class)->setPermissionClass(Permission::class);
     }
 }

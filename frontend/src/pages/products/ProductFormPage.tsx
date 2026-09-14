@@ -7,7 +7,7 @@ import Spinner from '@/components/ui/Spinner'
 import { getProduct, createProduct, updateProduct, checkProductIdentity, getProducts } from '@/api/products'
 import { getCategories, getSuppliers, stockAdjust } from '@/api'
 import SmartScanner from '@/components/ui/SmartScanner'
-import { Product, ProductStock } from '@/types'
+import { ProductStock } from '@/types'
 
 const UNITS = ['pcs', 'kg', 'gram', 'liter', 'ml', 'dus', 'lusin', 'karton', 'pak', 'botol', 'kaleng', 'bungkus', 'galon', 'sachet']
 

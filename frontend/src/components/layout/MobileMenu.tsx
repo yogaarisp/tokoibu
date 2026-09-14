@@ -36,7 +36,7 @@ export default function MobileMenu({ open, onClose }: Props) {
   }
 
   const handleLogout = async () => {
-    try { await apiLogout() } catch {}
+    try { await apiLogout() } catch { /* logout tetap lanjut walau request gagal */ }
     clearAuth()
     navigate('/login')
   }

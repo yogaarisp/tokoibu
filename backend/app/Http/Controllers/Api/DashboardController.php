@@ -18,24 +18,24 @@ class DashboardController extends Controller
 
     public function index(): JsonResponse
     {
-        $today     = Carbon::today();
+        $today = Carbon::today();
         $thisMonth = Carbon::now()->startOfMonth();
 
         $stats = [
-            'total_products'     => Product::active()->count(),
-            'total_stock'        => Product::active()->sum('stock'),
-            'sales_today'        => Sale::whereDate('created_at', $today)->where('status', '!=', 'cancelled')->sum('grand_total'),
-            'sales_this_month'   => Sale::where('created_at', '>=', $thisMonth)->where('status', '!=', 'cancelled')->sum('grand_total'),
+            'total_products' => Product::active()->count(),
+            'total_stock' => Product::active()->sum('stock'),
+            'sales_today' => Sale::whereDate('created_at', $today)->where('status', '!=', 'cancelled')->sum('grand_total'),
+            'sales_this_month' => Sale::where('created_at', '>=', $thisMonth)->where('status', '!=', 'cancelled')->sum('grand_total'),
             'revenue_this_month' => Sale::where('created_at', '>=', $thisMonth)->where('status', '!=', 'cancelled')->sum('grand_total'),
-            'customer_debt'      => CustomerDebt::whereIn('status', ['unpaid', 'partial'])->sum('remaining_amount'),
-            'supplier_debt'      => SupplierDebt::whereIn('status', ['unpaid', 'partial'])->sum('remaining_amount'),
-            'low_stock_count'    => Product::lowStock()->count(),
+            'customer_debt' => CustomerDebt::whereIn('status', ['unpaid', 'partial'])->sum('remaining_amount'),
+            'supplier_debt' => SupplierDebt::whereIn('status', ['unpaid', 'partial'])->sum('remaining_amount'),
+            'low_stock_count' => Product::lowStock()->count(),
         ];
 
         $daily_sales = Sale::select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(grand_total) as total')
-            )
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('SUM(grand_total) as total')
+        )
             ->where('status', '!=', 'cancelled')
             ->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay())
             ->groupBy('date')
@@ -43,9 +43,9 @@ class DashboardController extends Controller
             ->get();
 
         $monthly_revenue = Sale::select(
-                DB::raw("DATE_FORMAT(created_at,'%Y-%m') as month"),
-                DB::raw('SUM(grand_total) as total')
-            )
+            DB::raw("DATE_FORMAT(created_at,'%Y-%m') as month"),
+            DB::raw('SUM(grand_total) as total')
+        )
             ->where('status', '!=', 'cancelled')
             ->where('created_at', '>=', Carbon::now()->subMonths(5)->startOfMonth())
             ->groupBy('month')

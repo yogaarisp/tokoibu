@@ -14,7 +14,9 @@ class FixProductStocksSeeder extends Seeder
         $warehouse = Location::where('type', 'warehouse')->first();
         $display = Location::where('type', 'display')->first();
 
-        if (!$warehouse && !$display) return;
+        if (! $warehouse && ! $display) {
+            return;
+        }
 
         Product::chunk(100, function ($products) use ($warehouse, $display) {
             foreach ($products as $product) {

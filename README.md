@@ -14,6 +14,8 @@ Arsitektur **Backend API terpisah ↔ Frontend SPA** — mobile-friendly, bisa d
 Toko/
 ├── backend/      ← Laravel 11 REST API (port 8000)
 ├── frontend/     ← React 19 + Vite SPA  (port 5173+)
+├── docs/         ← Panduan implementasi & rencana perbaikan
+├── .github/      ← CI (Pint + phpunit + lint + build)
 ├── README.md
 └── warung.md     ← PRD original
 ```
@@ -51,12 +53,15 @@ Toko/
 
 ## 👥 Role & Permission
 
+Matrix role di bawah **ditegakkan di API** via middleware `role:` (`routes/api.php`) —
+bukan hanya menyembunyikan menu di frontend:
+
 | Modul            | Owner | Admin | Kasir |
 |------------------|:-----:|:-----:|:-----:|
 | Dashboard        | ✅    | ✅    | —     |
 | Kasir / POS      | ✅    | —     | ✅    |
 | Produk           | ✅    | ✅    | ✅    |
-| Kategori         | ✅    | —     | —     |
+| Kategori         | ✅    | ✅    | —     |
 | Supplier         | ✅    | ✅    | —     |
 | Pelanggan        | ✅    | ✅    | ✅    |
 | Penjualan        | ✅    | ✅    | ✅    |
@@ -67,6 +72,10 @@ Toko/
 | Pengguna         | ✅    | —     | —     |
 | Pengaturan       | ✅    | —     | —     |
 | Printer          | ✅    | —     | —     |
+
+Catatan: semua role tetap bisa **membaca** settings (`GET /settings`) karena
+kasir membutuhkan data toko untuk cetak struk; hanya perubahan (`POST /settings`)
+yang dibatasi owner. Token login berlaku 30 hari; endpoint login di-rate-limit.
 
 ---
 
@@ -243,18 +252,19 @@ Accept: application/json
 ### Auth
 | Method | Endpoint | Keterangan |
 |--------|----------|------------|
-| POST | `/auth/login` | Login, returns token |
+| POST | `/auth/login` | Login, returns token (rate limit 5x/menit, token berlaku 30 hari) |
 | POST | `/auth/logout` | Logout, revoke token |
 | GET  | `/auth/me` | Data user yang login |
 
 ### Products
 | Method | Endpoint | Keterangan |
 |--------|----------|------------|
-| GET | `/products` | List produk (filter: search, category_id, low_stock) |
+| GET | `/products` | List produk (filter: search, category_id, low_stock, is_active) |
 | POST | `/products` | Tambah produk (multipart/form-data untuk foto) |
-| GET | `/products/{id}` | Detail produk |
+| GET | `/products/{id}` | Detail produk + stok per lokasi |
 | PUT | `/products/{id}` | Update produk |
-| DELETE | `/products/{id}` | Hapus produk |
+| DELETE | `/products/{id}` | Hapus produk (soft delete) |
+| GET | `/products/meta/check-identity` | Cek SKU/barcode sudah dipakai |
 | GET | `/products/search/barcode?barcode=xxx` | Cari by barcode |
 
 ### Master Data
@@ -294,6 +304,16 @@ POST   /inventory/out
 POST   /inventory/adjust
 ```
 
+### Locations & Stock Transfers
+```
+GET|POST             /locations
+GET|PUT|DELETE       /locations/{id}
+
+GET    /stock-transfers
+POST   /stock-transfers
+GET    /stock-transfers/{id}
+```
+
 ### Debts
 ```
 GET    /debts/customers            (filter: status, search)
@@ -327,7 +347,7 @@ DELETE /users/{id}          [role:owner]
 ### Backend (`backend/`)
 ```
 app/
-├── Http/Controllers/Api/     ← 11 API controllers
+├── Http/Controllers/Api/     ← 16 API controllers
 │   ├── AuthController.php
 │   ├── DashboardController.php
 │   ├── ProductController.php
@@ -337,33 +357,37 @@ app/
 │   ├── SaleController.php
 │   ├── PurchaseController.php
 │   ├── InventoryController.php
+│   ├── LocationController.php
+│   ├── StockTransferController.php
 │   ├── CustomerDebtController.php
 │   ├── SupplierDebtController.php
 │   ├── ReportController.php
 │   ├── SettingController.php
 │   └── UserController.php
-├── Models/                   ← 15 Eloquent models
+├── Models/                   ← 18 Eloquent models
 │   ├── User, Category, Supplier, Customer
-│   ├── Product, Sale, SaleItem
+│   ├── Product, ProductStock, Location, StockTransfer
+│   ├── Sale, SaleItem
 │   ├── Purchase, PurchaseItem
 │   ├── StockMovement
 │   ├── CustomerDebt, CustomerDebtPayment
 │   ├── SupplierDebt, SupplierDebtPayment
 │   └── Setting
 └── Services/                 ← Business logic
-    ├── SaleService.php       (transaksi + stok otomatis)
-    ├── InventoryService.php  (in/out/adjust)
+    ├── SaleService.php       (transaksi + stok otomatis + cancel hutang)
+    ├── InventoryService.php  (in/out/adjust per lokasi)
     ├── PurchaseService.php   (PO + receive)
-    ├── DebtService.php       (bayar hutang)
+    ├── DebtService.php       (bayar hutang, lock anti double-submit)
     └── ReportService.php     (laporan)
 
 database/
-├── migrations/               ← 25 migration files
+├── migrations/               ← 26 migration files
 └── seeders/
     ├── DatabaseSeeder.php
     ├── RolePermissionSeeder.php
     ├── UserSeeder.php
     ├── CategorySeeder.php
+    ├── LocationSeeder.php
     ├── ProductSeeder.php     ← 10 produk demo
     └── SettingSeeder.php
 ```
@@ -451,6 +475,9 @@ pages/
 | suppliers | Data supplier |
 | customers | Data pelanggan + limit hutang |
 | products | Master produk + stok + foto |
+| locations | Lokasi stok (Gudang, Rak Display, dll) |
+| product_stocks | Stok produk per lokasi |
+| stock_transfers | Riwayat transfer stok antar lokasi |
 | sales | Header transaksi penjualan |
 | sale_items | Detail item penjualan |
 | purchases | Purchase Order ke supplier |
@@ -460,9 +487,38 @@ pages/
 | customer_debt_payments | Riwayat bayar hutang pelanggan |
 | supplier_debts | Hutang ke supplier |
 | supplier_debt_payments | Riwayat bayar hutang supplier |
+| invoice_sequences | Counter nomor invoice harian (anti race condition) |
 | settings | Konfigurasi app (store name, tax, dll) |
 
-**Total: 16 tabel + 9 tabel sistem Laravel** (users, cache, jobs, sessions, dll)
+**Total: 20 tabel + 9 tabel sistem Laravel** (users, cache, jobs, sessions, dll)
+
+---
+
+## 🧪 Testing & CI
+
+### Backend (PHPUnit)
+Test pakai database MySQL terpisah `warung_bu_tutik_test` (dibuat otomatis bila belum ada):
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS warung_bu_tutik_test CHARACTER SET utf8mb4;"
+cd backend
+php artisan test
+```
+
+Coverage utama: `SaleService` (stok, diskon/pajak, hutang, pembatalan, invoice) dan
+`DebtService` (bayar parsial/lunas, anti overpay). Konfigurasi test ada di `phpunit.xml`.
+
+### Frontend
+```bash
+cd frontend
+npm run lint   # ESLint 9 (flat config)
+npm run build  # tsc -b && vite build
+```
+
+### CI (GitHub Actions)
+`.github/workflows/ci.yml` menjalankan dua job di setiap push/PR:
+- **backend** — Pint (code style) + `php artisan test` (MySQL service)
+- **frontend** — `npm run lint` + `npm run build`
 
 ---
 
@@ -521,9 +577,8 @@ server {
 
 ### Environment (.env penting)
 ```env
-# Backend CORS — tambahkan URL frontend production
-FRONTEND_URL=https://warungbutik.com
-SANCTUM_STATEFUL_DOMAINS=warungbutik.com
+# Backend CORS — tambahkan URL frontend production (dipisah koma bila lebih dari satu)
+FRONTEND_URLS=https://warungbutik.com
 
 # Storage
 FILESYSTEM_DISK=public

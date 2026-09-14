@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { Plus, Edit2, Trash2, Eye, Phone, Mail } from 'lucide-react'
+import { Plus, Edit2, Trash2, Phone, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '@/api'
 import { Supplier } from '@/types'

@@ -2,8 +2,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingCart, Package, Tags, Truck,
   Users, FileText, Boxes, Warehouse, CreditCard,
-  BarChart3, Settings, LogOut, Store, X, Printer,
-  ChevronLeft, ChevronRight, MapPin, ArrowRightLeft,
+  BarChart3, Settings, LogOut, Store, X,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
@@ -77,7 +77,7 @@ export default function Sidebar({ onClose }: Props) {
   }
 
   const handleLogout = async () => {
-    try { await apiLogout() } catch {}
+    try { await apiLogout() } catch { /* logout tetap lanjut walau request gagal */ }
     clearAuth()
     navigate('/login')
   }

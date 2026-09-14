@@ -28,14 +28,6 @@ export interface BrowserReceiptData {
 
 export function printReceiptBrowser(data: BrowserReceiptData): void {
   const w = data.paperWidth ?? '80mm'
-  const charW = w === '58mm' ? 32 : 48
-
-  const pad = (left: string, right: string): string => {
-    const spaces = charW - left.length - right.length
-    return left + (spaces > 0 ? ' '.repeat(spaces) : ' ') + right
-  }
-
-  const sep = (ch = '-') => ch.repeat(charW)
 
   const itemsHtml = data.items.map(item => `
     <div class="item-name">${item.name}</div>

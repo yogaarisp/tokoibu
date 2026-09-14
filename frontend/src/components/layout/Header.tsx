@@ -1,8 +1,6 @@
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Menu, Bell, Search, ChevronRight } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { Menu, Bell, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { useSettingStore } from '@/store/settingStore'
-import { cn } from '@/lib/utils'
 
 const breadcrumbs: Record<string, { label: string; parent?: string }> = {
   '/dashboard':           { label: 'Dashboard' },

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library'
-import { Camera, CameraOff, RefreshCw, X, Keyboard, Zap, Image, Eye, EyeOff } from 'lucide-react'
+import { Camera, CameraOff, RefreshCw, X, Keyboard, Zap, Image } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { imageMatcher, MatchResult } from '@/lib/imageMatcher'
 import { Product } from '@/types'

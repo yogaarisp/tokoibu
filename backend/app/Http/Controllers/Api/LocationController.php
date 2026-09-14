@@ -11,6 +11,7 @@ class LocationController extends Controller
     public function index()
     {
         $locations = Location::orderBy('name')->get();
+
         return response()->json($locations);
     }
 
@@ -24,12 +25,14 @@ class LocationController extends Controller
         ]);
 
         $location = Location::create($validated);
+
         return response()->json($location, 201);
     }
 
     public function show(Location $location)
     {
         $location->load('productStocks.product');
+
         return response()->json($location);
     }
 
@@ -43,12 +46,14 @@ class LocationController extends Controller
         ]);
 
         $location->update($validated);
+
         return response()->json($location);
     }
 
     public function destroy(Location $location)
     {
         $location->delete();
+
         return response()->json(null, 204);
     }
 }

@@ -28,7 +28,7 @@ export default function BottomNav() {
   ]
 
   const NavItem = ({
-    label, to, icon: Icon, permission, onClick,
+    label, to, icon: Icon, onClick,
   }: {
     label: string; to: string | null; icon: any
     permission?: string; onClick?: () => void

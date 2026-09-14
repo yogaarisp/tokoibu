@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Printer, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getSale, cancelSale } from '@/api'
@@ -11,7 +11,6 @@ import { useState } from 'react'
 
 export default function SaleDetail() {
   const { id }   = useParams()
-  const navigate = useNavigate()
   const qc       = useQueryClient()
   const currency = useSettingStore((s) => s.currency())
   const settings = useSettingStore((s) => s.settings)

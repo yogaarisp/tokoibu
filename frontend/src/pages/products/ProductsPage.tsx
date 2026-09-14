@@ -224,7 +224,6 @@ export default function ProductsPage() {
                 </thead>
                 <tbody>
                   {data?.data.map((p) => {
-                    const gudangStockPcs = getGudangStockPcs(p)
                     const gudangStockDisplay = getGudangStockDisplay(p)
                     const displayStock = getDisplayStock(p)
                     return (
@@ -284,7 +283,6 @@ export default function ProductsPage() {
               <EmptyState title="Tidak ada produk" action={<Link to="/products/create" className="btn-primary">+ Tambah Produk</Link>} />
             )}
             {data?.data.map((p: Product) => {
-                    const gudangStockPcs = getGudangStockPcs(p)
                     const gudangStockDisplay = getGudangStockDisplay(p)
                     const displayStock = getDisplayStock(p)
                     return (

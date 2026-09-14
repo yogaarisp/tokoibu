@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getLocations, getProducts, createStockTransfer, getStockTransfers } from '@/api'
-import { Location, Product, StockTransfer } from '@/types'
 import Spinner from '@/components/ui/Spinner'
 import toast from 'react-hot-toast'
 

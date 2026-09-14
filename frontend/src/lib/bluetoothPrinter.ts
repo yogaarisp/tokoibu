@@ -92,10 +92,10 @@ class BluetoothPrinterManager {
           try {
             characteristic = await service.getCharacteristic(charUuid)
             break
-          } catch {}
+          } catch { /* coba UUID berikutnya */ }
         }
         if (characteristic) break
-      } catch {}
+      } catch { /* coba service berikutnya */ }
     }
 
     // Fallback: ambil semua service dan characteristic yang writeable
@@ -173,7 +173,7 @@ export const printerStorage = {
     try {
       const raw = localStorage.getItem('printer_settings')
       if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
-    } catch {}
+    } catch { /* fallback ke default settings */ }
     return DEFAULT_SETTINGS
   },
   clear: () => localStorage.removeItem('printer_settings'),
