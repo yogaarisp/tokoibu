@@ -2,7 +2,9 @@ import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  // VITE_API_URL diisi saat API dipisah domain, mis. https://api.domain.com.
+  // Kosong (default) = satu domain dengan API (atau lewat proxy Vite di dev).
+  baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
